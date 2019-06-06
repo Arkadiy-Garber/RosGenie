@@ -346,6 +346,7 @@ for i in binDirLS:
                 perc = (count / len(HMMdirLS)) * 100
                 # print(str(perc) + "%")
                 # print("%.2f" % perc + "% done")
+                print("")
                 sys.stdout.write("analyzing " + i + ": %d%%   \r" % (perc + 1))
                 sys.stdout.flush()
                 if not re.match(r'^\.', hmm):
