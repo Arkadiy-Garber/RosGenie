@@ -353,7 +353,7 @@ for i in binDirLS:
                               " --tblout " + binDir + "/" + i + "-HMM/" + i + "__" + hmm +
                               " -o " + binDir + "/" + i + "-HMM/" + i + "__" + hmm + ".txt " +
                               HMMdir + "/" + hmm + " " +
-                              binDir + "/" + i + "-proteins.faa")
+                              binDir + "/" + i)
                     os.system("rm " + binDir + "/" + i + "-HMM/" + i + "__" + hmm + ".txt")
 
         HMMresults = os.listdir(args.bin_dir + "/" + i + "-HMM")
