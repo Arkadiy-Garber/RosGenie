@@ -331,7 +331,7 @@ count = 0
 BinDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
 out = open("%s/%s.csv" % (args.outdir, args.out), "w")
 out.write(
-    "bin" + "," + "gene" + "," + "process" + "," + "substrate" + "," + "ORF" + "," + "evalue" + "," + "bitscore" + "," + "sequence" + "\n")
+    "bin" + "," + "gene" + "," + "ORF" + "," + "evalue" + "," + "bitscore" + "," + "sequence" + "\n")
 for i in binDirLS:
     HMMdict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
     if not re.match(r'^\.', i) and i != (args.out + ".csv") and lastItem(i.split(".")) == args.bin_ext:
@@ -412,7 +412,7 @@ for i in binDirLS:
 
         for key in HMMdict.keys():
             out.write(
-                i + "," + HMMdict[key]["hmm"] + "," + HMMdict[key]["process"] + "," + HMMdict[key]["element"] +
+                i + "," + HMMdict[key]["hmm"] + "," +
                 "," + key + "," + HMMdict[key]["evalue"] + "," + HMMdict[key]["bitscore"] + "," + fastaFile[key]
                 + "\n")
         os.system("rm -r " + args.bin_dir + "/" + i + "-HMM")
