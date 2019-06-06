@@ -235,9 +235,9 @@ parser.add_argument('-bin_ext', type=str, help="extension for bins (do not inclu
 parser.add_argument('-outdir', type=str, help="output directory (will be created if does not exist)",
                     default="genie_out")
 parser.add_argument('-out', type=str, help="basename of output file (default = out)", default="out")
-parser.add_argument('--contigs_source', type=str, help="are the provided contigs from a single organism (single)"
-                                                       "or are you providing this program with metagenomic/metatranscriptomic assemblies (meta)? "
-                                                       "(default=single)", default="single")
+# parser.add_argument('--contigs_source', type=str, help="are the provided contigs from a single organism (single)"
+#                                                        "or are you providing this program with metagenomic/metatranscriptomic assemblies (meta)? "
+#                                                        "(default=single)", default="single")
 # parser.add_argument('-bams', type=str, help="a tab-delimeted file with two columns: first column has the genome or "
 #                                             "metagenome file names; second column has the corresponding BAM file "
 #                                             "(provide full path to the BAM file). BAM files are only required if you would like to create "
@@ -326,6 +326,7 @@ for i in bits:
 print("...")
 
 
+os.system("mkdir " + args.outdir)
 count = 0
 BinDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
 out = open("%s/%s.csv" % (args.outdir, args.out), "w")
