@@ -223,8 +223,24 @@ parser = argparse.ArgumentParser(
     Developed by Arkadiy Garber;
     University of Southern California, Earth Sciences
     University of Montana, Biological Sciences
-    Please send comments and inquiries to arkadiyg@usc.edu
+    Please send comments and inquiries to arkadiyg@usc.edu            
+                                                                                                               
+     /////////////,                  .//,                  .***//////////.     
+   ###################.         ##############          ###################       
+   #####################     ,###################     ,####################         
+                   #####                  *#######    #####,                      
+     /            ######    /,               ######   ######*                            
+   #####        #######   #####               /#####   ##########                     
+   #####      #######(    #####                #####.    ############.            
+   #####    #######(      #####                #####.        ############             
+   #####  ,######/        #####/               #####             /########/                  
+   #####  #####/           #####(            .#####(                 *#####             
+   #####  #####            .######(        /######(                   #####       
+   #####  #############.     ####################      ####################  GENIE
+   #####   /############       ################       ###################(              
+    ###       (########            /######(            ################                   
 
+    STRESS FOR LESS
 
     ASCII art: https://manytools.org/hacker-tools/convert-images-to-ascii-art/ 
     *******************************************************
@@ -235,14 +251,9 @@ parser.add_argument('-bin_ext', type=str, help="extension for bins (do not inclu
 parser.add_argument('-outdir', type=str, help="output directory (will be created if does not exist)",
                     default="genie_out")
 parser.add_argument('-out', type=str, help="basename of output file (default = out)", default="out")
-# parser.add_argument('--contigs_source', type=str, help="are the provided contigs from a single organism (single)"
-#                                                        "or are you providing this program with metagenomic/metatranscriptomic assemblies (meta)? "
-#                                                        "(default=single)", default="single")
-# parser.add_argument('-bams', type=str, help="a tab-delimeted file with two columns: first column has the genome or "
-#                                             "metagenome file names; second column has the corresponding BAM file "
-#                                             "(provide full path to the BAM file). BAM files are only required if you would like to create "
-#                                             "a heatmap that summarizes the abundance of a certain gene that is based on "
-#                                             "read coverage, rather than gene counts.", default="NA")
+parser.add_argument('--contigs_source', type=str, help="are the provided contigs from a single organism (single)"
+                                                       "or are you providing this program with metagenomic/metatranscriptomic assemblies (meta)? "
+                                                       "(default=single)", default="single")
 parser.add_argument('--d', type=int, help="maximum distance between genes to be considered in a genomic \'cluster\'."
                                           "This number should be an integer and should reflect the maximum number of "
                                           "genes in between putative iron-related genes identified by the HMM database "
@@ -250,6 +261,32 @@ parser.add_argument('--d', type=int, help="maximum distance between genes to be 
 
 
 parser.add_argument('--cpu', type=int, help="number of threads to allow for hmmsearch (default = 1)", default=1)
+
+parser.add_argument('-bams', type=str, help="a tab-delimited file with two columns: first column has the genome or "
+                                            "metagenome file names; second column has the corresponding BAM file "
+                                            "(provide full path to the BAM file). Use this option if you have genomes "
+                                            "that each have different BAM files associated with them. If you have a set "
+                                            "of bins from a single metagenome sample and, thus, have only one BAM file, "
+                                            " then use the \'-bam\' option. BAM files are only required if you would like to create "
+                                            "a heatmap that summarizes the abundance of a certain gene that is based on "
+                                            "read coverage, rather than gene counts.", default="NA")
+
+parser.add_argument('-bam', type=str, help="BAM file. This option is only required if you would like to create "
+                                            "a heatmap that summarizes the abundance of a certain gene that is based on "
+                                            "read coverage, rather than gene counts. If you have more than one BAM file"
+                                           "corresponding to different genomes that you are providing, then use the \'-bams\' "
+                                           "option to provide a tab-delimited file that denotes which BAM file (or files) belongs "
+                                           "with which genome", default="NA")
+
+parser.add_argument('--makeplots', type=str,
+                    help="Would you like LithoGenie to make some figures from your data? y = yes, n = no (default = n). "
+                         "If so, you will need to have Rscipt installed. It is a way for R to be called directly from the command line. "
+                         "Warning: this part of the program is currently under beta-testing, and if there are any problems running Rscript, "
+                         "or installing any of the required packages, you may get a bunch of error messages at the end. "
+                         "This will not crash the program, however, and you can still expect to "
+                         "see the main output (CSV files) from Genie.", default="n")
+
+
 
 
 # CHECKING FOR CONDA INSTALL
@@ -344,8 +381,6 @@ for i in binDirLS:
             if hmm != "hmm-meta.txt":
                 count += 1
                 perc = (count / len(HMMdirLS)) * 100
-                # print(str(perc) + "%")
-                # print("%.2f" % perc + "% done")
                 print("")
                 sys.stdout.write("analyzing " + i + ": %d%%   \r" % (perc + 1))
                 sys.stdout.flush()
@@ -421,9 +456,164 @@ out.close()
 
 os.system("mv %s/%s.csv %s/%s-summary.csv" % (args.outdir, args.out, args.outdir, args.out))
 
+
+# ****************************** CREATING A HEATMAP-COMPATIBLE CSV FILE *************************************
 print("....")
 print(".....")
-print('......')
-print(".......")
-print("Finished!")
-print("results are in %s/%s-summary.csv" % (args.outdir, args.out))
+# COVERAGE-BASED ABUNDANCE
+if args.bams != "NA":
+    depthDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
+    BAMmapDict = defaultdict(lambda: defaultdict(lambda: "EMPTY"))
+    BAMmap = open(args.bams)
+    for i in BAMmap:
+        string = ''
+        ls = i.rstrip().split("\t")
+        cell = ls[0]
+        for j in ls[1:]:
+            string += " "
+            string += j
+        try:
+            depth = open("%s/%s.depth" % (args.outdir, cell))
+            for k in depth:
+                LS = k.rstrip().split("\t")
+                if LS[0] != "contigName":
+                    depthDict[cell][LS[0]] = LS[2]
+
+        except FileNotFoundError:
+            os.system("jgi_summarize_bam_contig_depths --outputDepth %s/%s.depth%s" % (args.outdir, cell, string))
+            print("processing... " + cell)
+            depth = open("%s/%s.depth" % (args.outdir, cell))
+            for k in depth:
+                LS = k.rstrip().split("\t")
+                if LS[0] != "contigName":
+                    depthDict[cell][LS[0]] = LS[2]
+
+    os.system("mkdir %s/contigDepths" % args.outdir)
+    os.system("mv %s/*depth %s/contigDepths/" % (args.outdir, args.outdir))
+
+    cats = ["ROS"]
+
+    Dict = defaultdict(lambda: defaultdict(list))
+    final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
+    for i in final:
+        ls = (i.rstrip().split(","))
+        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+            if not re.match(r'#', i):
+                process = ls[0]
+                cell = ls[3]
+                orf = ls[4]
+                contig = allButTheLast(orf, "_")
+                gene = ls[2]
+                Dict[cell][process].append(float(depthDict[cell][contig]))
+
+    outHeat = open("%s/%s.%s.readDepth.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    outHeat.write("X" + ',')
+    for i in sorted(Dict.keys()):
+        outHeat.write(i + ",")
+    outHeat.write("\n")
+
+    for i in cats:
+        outHeat.write(i + ",")
+        for j in sorted(Dict.keys()):
+            if not re.match(r'#', j):
+                outHeat.write(str(SUM(Dict[j][i])) + ",")
+        outHeat.write("\n")
+
+    outHeat.close()
+
+
+
+# COVERAGE-BASED ABUNDANCE USING ONLY ONE BAM FILE
+elif args.bam != "NA":
+    depthDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
+
+    try:
+        depth = open("%s.depth" % (args.bam))
+        for k in depth:
+            LS = k.rstrip().split("\t")
+            if LS[0] != "contigName":
+                depthDict[LS[0]] = LS[2]
+
+    except FileNotFoundError:
+        os.system("jgi_summarize_bam_contig_depths --outputDepth %s.depth %s" % (args.bam, args.bam))
+        depth = open("%s.depth" % (args.bam))
+        for k in depth:
+            LS = k.rstrip().split("\t")
+            if LS[0] != "contigName":
+                depthDict[LS[0]] = LS[2]
+
+    cats = ["ROS"]
+
+    Dict = defaultdict(lambda: defaultdict(list))
+    final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
+    for i in final:
+        ls = (i.rstrip().split(","))
+        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+            if not re.match(r'#', i):
+                process = ls[0]
+                cell = ls[3]
+                orf = ls[4]
+                contig = allButTheLast(orf, "_")
+                gene = ls[2]
+                Dict[cell][process].append(float(depthDict[contig]))
+
+    outHeat = open("%s/%s.%s.readDepth.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    outHeat.write("X" + ',')
+    for i in sorted(Dict.keys()):
+        outHeat.write(i + ",")
+    outHeat.write("\n")
+
+    for i in cats:
+        outHeat.write(i + ",")
+        for j in sorted(Dict.keys()):
+            if not re.match(r'#', j):
+                outHeat.write(str(SUM(Dict[j][i])) + ",")
+        outHeat.write("\n")
+
+    outHeat.close()
+    print('......')
+    print(".......")
+    print("Finished!")
+
+
+# GENE COUNTS-BASED ABUNDANCE
+else:
+    cats = ["ROS"]
+
+    Dict = defaultdict(lambda: defaultdict(list))
+    final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
+    for i in final:
+        ls = (i.rstrip().split(","))
+        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+            if not re.match(r'#', i):
+                process = ls[0]
+                cell = ls[3]
+                orf = ls[4]
+                gene = ls[2]
+                Dict[cell][process].append(gene)
+
+    normDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
+    for i in os.listdir(args.bin_dir):
+        if lastItem(i.split(".")) == args.bin_ext:
+            file = open("%s/%s-proteins.faa" % (args.bin_dir, i), "r")
+            file = fasta(file)
+            normDict[i] = len(file.keys())
+
+    outHeat = open("%s/%s.%s.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    outHeat.write("X" + ',')
+    for i in sorted(Dict.keys()):
+        outHeat.write(i + ",")
+    outHeat.write("\n")
+
+    for i in cats:
+        outHeat.write(i + ",")
+        for j in sorted(Dict.keys()):
+            if not re.match(r'#', j):
+                outHeat.write(str((len(Dict[j][i]) / int(normDict[j])) * float(100)) + ",")
+        outHeat.write("\n")
+    outHeat.close()
+
+    print('......')
+    print(".......")
+    print("Finished!")
+
