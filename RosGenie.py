@@ -251,9 +251,7 @@ parser.add_argument('-bin_ext', type=str, help="extension for bins (do not inclu
 parser.add_argument('-outdir', type=str, help="output directory (will be created if does not exist)",
                     default="genie_out")
 parser.add_argument('-out', type=str, help="basename of output file (default = out)", default="out")
-parser.add_argument('--contigs_source', type=str, help="are the provided contigs from a single organism (single)"
-                                                       "or are you providing this program with metagenomic/metatranscriptomic assemblies (meta)? "
-                                                       "(default=single)", default="single")
+
 parser.add_argument('--d', type=int, help="maximum distance between genes to be considered in a genomic \'cluster\'."
                                           "This number should be an integer and should reflect the maximum number of "
                                           "genes in between putative iron-related genes identified by the HMM database "
@@ -381,7 +379,6 @@ for i in binDirLS:
             if hmm != "hmm-meta.txt":
                 count += 1
                 perc = (count / len(HMMdirLS)) * 100
-                print("")
                 sys.stdout.write("analyzing " + i + ": %d%%   \r" % (perc + 1))
                 sys.stdout.flush()
                 if not re.match(r'^\.', hmm):
@@ -595,7 +592,7 @@ else:
     normDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
     for i in os.listdir(args.bin_dir):
         if lastItem(i.split(".")) == args.bin_ext:
-            file = open("%s/%s-proteins.faa" % (args.bin_dir, i), "r")
+            file = open("%s/%s" % (args.bin_dir, i), "r")
             file = fasta(file)
             normDict[i] = len(file.keys())
 
@@ -616,4 +613,3 @@ else:
     print('......')
     print(".......")
     print("Finished!")
-
