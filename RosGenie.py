@@ -379,7 +379,7 @@ for i in binDirLS:
             if hmm != "hmm-meta.txt":
                 count += 1
                 perc = (count / len(HMMdirLS)) * 100
-                sys.stdout.write("analyzing " + i + ": %d%%   \r" % (perc + 1))
+                sys.stdout.write("analyzing " + i + ": %d%%   \r" % (perc + 8))
                 sys.stdout.flush()
                 if not re.match(r'^\.', hmm):
                     os.system("hmmsearch --cpu " + str(args.cpu) +
@@ -455,6 +455,7 @@ os.system("mv %s/%s.csv %s/%s-summary.csv" % (args.outdir, args.out, args.outdir
 
 
 # ****************************** CREATING A HEATMAP-COMPATIBLE CSV FILE *************************************
+print("")
 print("....")
 print(".....")
 # COVERAGE-BASED ABUNDANCE
@@ -488,22 +489,23 @@ if args.bams != "NA":
     os.system("mkdir %s/contigDepths" % args.outdir)
     os.system("mv %s/*depth %s/contigDepths/" % (args.outdir, args.outdir))
 
-    cats = ["ROS"]
+    cats = ["1-cysPeroxiredoxin_Cterminal", "Alkyl-hydroperoxide-reductase-ThiolSpecificAntioxidant", "catalase_Dyp_perox",
+            "catalase_Glutathione_peroxidase", "Catalase", "catalase-peroxidase", "Catalase-rel-immune-response",
+            "CCP_MauG", "Sod_CuZn", "SOD_FeMn_Cterminal", "SOD_FeMn_Nterminal"]
 
     Dict = defaultdict(lambda: defaultdict(list))
     final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
     for i in final:
         ls = (i.rstrip().split(","))
-        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+        if ls[0] != "bin" and ls[1] != "assembly" and ls[1] != "genome":
             if not re.match(r'#', i):
-                process = ls[0]
-                cell = ls[3]
-                orf = ls[4]
+                cell = ls[0]
+                orf = ls[3]
                 contig = allButTheLast(orf, "_")
-                gene = ls[2]
-                Dict[cell][process].append(float(depthDict[cell][contig]))
+                gene = ls[1]
+                Dict[cell][gene].append(float(depthDict[cell][contig]))
 
-    outHeat = open("%s/%s.%s.readDepth.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    outHeat = open("%s/%s.readDepth.heatmap.csv" % (args.outdir, args.out), "w")
     outHeat.write("X" + ',')
     for i in sorted(Dict.keys()):
         outHeat.write(i + ",")
@@ -517,7 +519,6 @@ if args.bams != "NA":
         outHeat.write("\n")
 
     outHeat.close()
-
 
 
 # COVERAGE-BASED ABUNDANCE USING ONLY ONE BAM FILE
@@ -539,22 +540,23 @@ elif args.bam != "NA":
             if LS[0] != "contigName":
                 depthDict[LS[0]] = LS[2]
 
-    cats = ["ROS"]
+    cats = ["1-cysPeroxiredoxin_Cterminal", "Alkyl-hydroperoxide-reductase-ThiolSpecificAntioxidant", "catalase_Dyp_perox",
+            "catalase_Glutathione_peroxidase", "Catalase", "catalase-peroxidase", "Catalase-rel-immune-response",
+            "CCP_MauG", "Sod_CuZn", "SOD_FeMn_Cterminal", "SOD_FeMn_Nterminal"]
 
     Dict = defaultdict(lambda: defaultdict(list))
     final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
     for i in final:
         ls = (i.rstrip().split(","))
-        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+        if ls[0] != "bin" and ls[1] != "assembly" and ls[1] != "genome":
             if not re.match(r'#', i):
-                process = ls[0]
-                cell = ls[3]
-                orf = ls[4]
+                cell = ls[0]
+                orf = ls[3]
+                gene = ls[1]
                 contig = allButTheLast(orf, "_")
-                gene = ls[2]
-                Dict[cell][process].append(float(depthDict[contig]))
+                Dict[cell][gene].append(float(depthDict[contig]))
 
-    outHeat = open("%s/%s.%s.readDepth.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    outHeat = open("%s/%s.readDepth.heatmap.csv" % (args.outdir, args.out), "w")
     outHeat.write("X" + ',')
     for i in sorted(Dict.keys()):
         outHeat.write(i + ",")
@@ -575,28 +577,33 @@ elif args.bam != "NA":
 
 # GENE COUNTS-BASED ABUNDANCE
 else:
-    cats = ["ROS"]
+    cats = ["1-cysPeroxiredoxin_Cterminal", "Alkyl-hydroperoxide-reductase-ThiolSpecificAntioxidant", "catalase_Dyp_perox",
+            "catalase_Glutathione_peroxidase", "Catalase", "catalase-peroxidase", "Catalase-rel-immune-response",
+            "CCP_MauG", "Sod_CuZn", "SOD_FeMn_Cterminal", "SOD_FeMn_Nterminal"]
 
     Dict = defaultdict(lambda: defaultdict(list))
     final = open("%s/%s-summary.csv" % (args.outdir, args.out), "r")
     for i in final:
         ls = (i.rstrip().split(","))
-        if ls[0] != "" and ls[1] != "assembly" and ls[1] != "genome":
+        print(ls)
+        if ls[0] != "bin" and ls[1] != "assembly" and ls[1] != "genome":
             if not re.match(r'#', i):
-                process = ls[0]
-                cell = ls[3]
-                orf = ls[4]
-                gene = ls[2]
-                Dict[cell][process].append(gene)
+                cell = ls[0]
+                orf = ls[3]
+                gene = ls[1]
+                Dict[cell][gene].append(gene)
 
+    print("\n\n")
     normDict = defaultdict(lambda: defaultdict(lambda: 'EMPTY'))
     for i in os.listdir(args.bin_dir):
         if lastItem(i.split(".")) == args.bin_ext:
             file = open("%s/%s" % (args.bin_dir, i), "r")
             file = fasta(file)
+            print(i)
             normDict[i] = len(file.keys())
 
-    outHeat = open("%s/%s.%s.heatmap.csv" % (args.outdir, args.out, args.element), "w")
+    print("\n\n")
+    outHeat = open("%s/%s.heatmap.csv" % (args.outdir, args.out), "w")
     outHeat.write("X" + ',')
     for i in sorted(Dict.keys()):
         outHeat.write(i + ",")
@@ -606,6 +613,8 @@ else:
         outHeat.write(i + ",")
         for j in sorted(Dict.keys()):
             if not re.match(r'#', j):
+                print(j)
+                print(normDict[j])
                 outHeat.write(str((len(Dict[j][i]) / int(normDict[j])) * float(100)) + ",")
         outHeat.write("\n")
     outHeat.close()
